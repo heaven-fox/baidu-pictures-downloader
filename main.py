@@ -15,4 +15,5 @@ import lib.crawler as cl
 if __name__ == '__main__':
     # 测试用例
     search_target = "kde"
-    cl.get_dlinks(search_target)
+    d_links = cl.get_dlinks(search_target)
+    cl.save_to_file(d_links, '%s.txt' % search_target)

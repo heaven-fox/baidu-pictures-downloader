@@ -15,7 +15,47 @@ _refer_path = "http://image.baidu.com/search/index?tn=baiduimage&ps=1&ct=2013265
 # ajax request url
 _ajax_url = "http://image.baidu.com/search/acjson?tn=resultjson_com&ipn=rj&ct=201326592&is=&fp=result&queryWord=%s&cl=2&" \
             "lm=-1&ie=utf-8&oe=utf-8&adpicid=&st=&z=&ic=&word=%s&s=&se=&tab=&width=&height=&face=&istype=&qc=&nc=1&fr=&" \
-            "pn=180&rn=30&gsm=96&1473335095606="
+            "pn=%d&rn=30&gsm=96&1473335095606="
+
+# decode list
+_replace_dict = {
+    "w": "a",
+    "k": "b",
+    "v": "c",
+    "1": "d",
+    "j": "e",
+    "u": "f",
+    "2": "g",
+    "i": "h",
+    "t": "i",
+    "3": "j",
+    "h": "k",
+    "s": "l",
+    "4": "m",
+    "g": "n",
+    "5": "o",
+    "r": "p",
+    "q": "q",
+    "6": "r",
+    "f": "s",
+    "p": "t",
+    "7": "u",
+    "e": "v",
+    "o": "w",
+    "8": "1",
+    "d": "2",
+    "n": "3",
+    "9": "4",
+    "c": "5",
+    "m": "6",
+    "0": "7",
+    "b": "8",
+    "l": "9",
+    "a": "0",
+    "_z2C$q": ":",
+    "_z&e3B": ".",
+    "AzdH3F": "/"
+}
 
 
 def get_dlinks(search_target):
@@ -30,16 +70,17 @@ def get_dlinks(search_target):
     curl.setopt(pycurl.REFERER, refer_url)
 
     result = []
-    counter = 1
-    ll = ''
-    # record_start_cursor = get_record_start_cursor()
+    ll = 0
+    record_start_cursor = get_record_start_cursor()
+    if record_start_cursor:
+        ll = int(record_start_cursor)
     print 'start'
     # 使用探测法拿到所有的图片资源
     while 1:
-        print 'crawler the %d picture' % counter
+        print 'crawler pictures of page %d' % (ll / 30 + 1)
         # 获取str类型的数据
         buffers = StringIO()
-        target_url = _ajax_url % (search_target, search_target)
+        target_url = _ajax_url % (search_target, search_target, ll)
         curl.setopt(pycurl.URL, target_url)
         curl.setopt(pycurl.WRITEDATA, buffers)
         curl.perform()
@@ -48,27 +89,52 @@ def get_dlinks(search_target):
         body = body.replace('null', 'None')
         data = eval(body)
         if 'data' in data:
+            has_data = False
             for a_data in data['data']:
-                print a_data['fromPageTitleEnc']
+                obj_url = None
+                if 'objURL' in a_data:
+                    obj_url = a_data['objURL']
+                if obj_url:
+                    # decode url
+                    has_data = True
+                    result.append(decode_url(obj_url))
+            if has_data:
+                ll += 30
+            else:
+                print 'no more pic'
                 break
-                img_url = None
-                if 'hasLarge' in a_data:
-                    if a_data['hasLarge']:
-                        img_url = a_data['largeTnImageUrl']
-                    elif 'middleURL' in a_data:
-                        img_url = a_data['middleURL']
-                    elif 'thumbUrl' in a_data:
-                        img_url = a_data['thumbURL']
-                print img_url
-        break
+        else:
+            print 'no more pic'
+            break
+        print ll
 
     print 'done'
     curl.close()
-    # # 更新start_cursor
-    # if ll:
-    #     set_record_start_cursor(ll)
+    # 更新page_num
+    if ll:
+        set_record_start_cursor(str(ll))
 
     return result
+
+
+def decode_url(source_url):
+    """
+    解密url
+    :param source_url:
+    :return:
+    """
+    if source_url:
+        source_url = source_url.replace('_z2C$q', _replace_dict['_z2C$q'])
+        source_url = source_url.replace('_z&e3B', _replace_dict['_z&e3B'])
+        source_url = source_url.replace('AzdH3F', _replace_dict['AzdH3F'])
+        length = len(source_url)
+        for i in xrange(0, length):
+            if source_url[i] in _replace_dict:
+                tmp = _replace_dict[source_url[i]]
+                if tmp:
+                    source_url = source_url[:i] + tmp + source_url[i+1:]
+
+    return source_url
 
 
 def save_to_file(d_links, file_name):
