@@ -74,10 +74,10 @@ def get_dlinks(search_target):
     record_start_cursor = get_record_start_cursor()
     if record_start_cursor:
         ll = int(record_start_cursor)
-    print 'start'
+    print('start')
     # 使用探测法拿到所有的图片资源
     while 1:
-        print 'crawler pictures of page %d' % (ll / 30 + 1)
+        print('crawler pictures of page %d' % (ll / 30 + 1))
         # 获取str类型的数据
         buffers = StringIO()
         target_url = _AJAX_URL % (search_target, search_target, ll)
@@ -98,20 +98,20 @@ def get_dlinks(search_target):
                     has_data = True
                     result.append(obj_url)
             if not has_data:
-                print 'no more pic'
+                print('no more pic')
                 break
             ll += 30
         else:
-            print 'no more pic'
+            print('no more pic')
             break
 
-    print 'done'
+    print('done')
     curl.close()
     # 更新page_num
     if ll:
         set_record_start_cursor(str(ll))
-    for a_item in result:
-        a_item = decode_url(a_item)
+    for index, data in enumerate(result):
+        result[index] = decode_url(data)
 
     return result
 
@@ -134,6 +134,8 @@ def decode_url(source_url):
                 tmp = _REPLACE_DICT[target_url[i]]
                 if tmp:
                     target_list.append(tmp)
+            else:
+                target_list.append(target_url[i])
         if target_list:
             result = ''.join(target_list)
 
@@ -160,7 +162,7 @@ def save_to_file(d_links, file_name):
             file_object.write('\n')
         file_object.close()
     except IOError:
-        print 'file not exist!'
+        print('file not exist!')
         exit()
 
 
@@ -181,7 +183,7 @@ def get_record_start_cursor():
 
         return line
     except IOError:
-        print 'file io error!'
+        print('file io error!')
         exit()
 
 
@@ -197,5 +199,5 @@ def set_record_start_cursor(start_cursor):
         file_object.write(start_cursor)
         file_object.close()
     except IOError:
-        print 'file io error!'
+        print('file io error!')
         exit()
