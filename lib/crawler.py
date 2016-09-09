@@ -6,19 +6,19 @@ from StringIO import StringIO
 
 
 # 伪装成iPad客户端
-user_agent = 'Mozilla/5.0(iPad; U; CPU iPhone OS 3_2 like Mac OS X; en-us) AppleWebKit/531.21.10' \
-             ' (KHTML, like Gecko) Version/4.0.4 Mobile/7B314 Safari/531.21.10'
+_USER_AGENT = 'Mozilla/5.0(iPad; U; CPU iPhone OS 3_2 like Mac OS X; en-us) AppleWebKit/531.21.10' \
+              ' (KHTML, like Gecko) Version/4.0.4 Mobile/7B314 Safari/531.21.10'
 
 # 伪造来源地址
-_refer_path = "http://image.baidu.com/search/index?tn=baiduimage&ps=1&ct=201326592&lm=-1&cl=2&nc=1&ie=utf-8&word=%s"
+_REFER_URL = "http://image.baidu.com/search/index?tn=baiduimage&ps=1&ct=201326592&lm=-1&cl=2&nc=1&ie=utf-8&word=%s"
 
 # ajax request url
-_ajax_url = "http://image.baidu.com/search/acjson?tn=resultjson_com&ipn=rj&ct=201326592&is=&fp=result&queryWord=%s&cl=2&" \
+_AJAX_URL = "http://image.baidu.com/search/acjson?tn=resultjson_com&ipn=rj&ct=201326592&is=&fp=result&queryWord=%s&cl=2&" \
             "lm=-1&ie=utf-8&oe=utf-8&adpicid=&st=&z=&ic=&word=%s&s=&se=&tab=&width=&height=&face=&istype=&qc=&nc=1&fr=&" \
             "pn=%d&rn=30&gsm=96&1473335095606="
 
 # decode list
-_replace_dict = {
+_REPLACE_DICT = {
     "w": "a",
     "k": "b",
     "v": "c",
@@ -64,9 +64,9 @@ def get_dlinks(search_target):
     :param search_target: 目标文本
     :return 返回图片的真实下载链接
     """
-    refer_url = _refer_path % search_target
+    refer_url = _REFER_URL % search_target
     curl = pycurl.Curl()
-    curl.setopt(pycurl.USERAGENT, user_agent)
+    curl.setopt(pycurl.USERAGENT, _USER_AGENT)
     curl.setopt(pycurl.REFERER, refer_url)
 
     result = []
@@ -80,7 +80,7 @@ def get_dlinks(search_target):
         print 'crawler pictures of page %d' % (ll / 30 + 1)
         # 获取str类型的数据
         buffers = StringIO()
-        target_url = _ajax_url % (search_target, search_target, ll)
+        target_url = _AJAX_URL % (search_target, search_target, ll)
         curl.setopt(pycurl.URL, target_url)
         curl.setopt(pycurl.WRITEDATA, buffers)
         curl.perform()
@@ -95,24 +95,23 @@ def get_dlinks(search_target):
                 if 'objURL' in a_data:
                     obj_url = a_data['objURL']
                 if obj_url:
-                    # decode url
                     has_data = True
-                    result.append(decode_url(obj_url))
-            if has_data:
-                ll += 30
-            else:
+                    result.append(obj_url)
+            if not has_data:
                 print 'no more pic'
                 break
+            ll += 30
         else:
             print 'no more pic'
             break
-        print ll
 
     print 'done'
     curl.close()
     # 更新page_num
     if ll:
         set_record_start_cursor(str(ll))
+    for a_item in result:
+        a_item = decode_url(a_item)
 
     return result
 
@@ -123,18 +122,22 @@ def decode_url(source_url):
     :param source_url:
     :return:
     """
+    result = ''
     if source_url:
-        source_url = source_url.replace('_z2C$q', _replace_dict['_z2C$q'])
-        source_url = source_url.replace('_z&e3B', _replace_dict['_z&e3B'])
-        source_url = source_url.replace('AzdH3F', _replace_dict['AzdH3F'])
-        length = len(source_url)
+        target_list = list()
+        target_url = source_url.replace('_z2C$q', _REPLACE_DICT['_z2C$q'])
+        target_url = target_url.replace('_z&e3B', _REPLACE_DICT['_z&e3B'])
+        target_url = target_url.replace('AzdH3F', _REPLACE_DICT['AzdH3F'])
+        length = len(target_url)
         for i in xrange(0, length):
-            if source_url[i] in _replace_dict:
-                tmp = _replace_dict[source_url[i]]
+            if target_url[i] in _REPLACE_DICT:
+                tmp = _REPLACE_DICT[target_url[i]]
                 if tmp:
-                    source_url = source_url[:i] + tmp + source_url[i+1:]
+                    target_list.append(tmp)
+        if target_list:
+            result = ''.join(target_list)
 
-    return source_url
+    return result
 
 
 def save_to_file(d_links, file_name):

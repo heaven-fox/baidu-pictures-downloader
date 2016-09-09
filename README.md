@@ -3,8 +3,8 @@ download pictures from baidu for batch.[http://image.baidu.com/](http://image.ba
 
 ##1. 项目结构说明
 - lib/
-
-	爬虫核心代码
+	
+	爬虫核心代码 + url解密js代码
 - out/
 
 	结果文件
@@ -14,6 +14,9 @@ download pictures from baidu for batch.[http://image.baidu.com/](http://image.ba
 - requirements.txt
 
 	python依赖库
+- cursor.txt
+
+	最新的page_num
 
 ##2. 项目运行说明
 ##Linux系统
